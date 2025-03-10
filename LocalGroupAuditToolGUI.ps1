@@ -295,10 +295,15 @@ $btnRunAudit.Add_Click({
         return
     }
     $LocalGroupName = $txtLocalGroup.Text
+
+    # Extract the first number from the Rescan Interval field
+    $rescanIntervalStr = $txtRescan.Text.Split(',')[0]
     $rescanHours = 2
-    [void][Double]::TryParse($txtRescan.Text, [ref]$rescanHours)
+    if (-not [double]::TryParse($rescanIntervalStr, [ref]$rescanHours)) {
+         Write-Log "Invalid rescan interval entered, defaulting to 2 hours."
+    }
     $rescanIntervalSec = [int]($rescanHours * 3600)
-    
+
     # Disable controls during scan
     $clbMachines.Enabled = $false
     $btnRunAudit.Enabled = $false
@@ -356,6 +361,8 @@ $btnRunAudit.Add_Click({
             for ($i=0; $i -lt $clbMachines.Items.Count; $i++) { $clbMachines.SetItemChecked($i, $true) }
             # Set selectedMachines for next iteration to the failed machines
             $selectedMachines = $failedMachines
+            Write-Log "Waiting for rescan interval of $rescanHours hour(s)..."
+            Start-Sleep -Seconds $rescanIntervalSec
         }
     } while (($failedMachines.Count -gt 0) -and (-not $global:StopScan))
     
